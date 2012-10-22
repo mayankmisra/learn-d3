@@ -8,17 +8,29 @@
 <body>
 
 <script type="text/javascript">
-function draw(data){
-    var list = d3.select("body")
-            .append("ul")
-            .selectAll("li")
-            .data(data);
-    list.enter().append("li").text(function(d){
-        return d.name + " : " + d.status;
-    })
-}
+    function draw(data) {
+        var list = d3.select("body")
+                .append("ul")
+                .selectAll("li")
+                .data(data);
 
-d3.json("./data/service_status.json", draw);
+        list.enter().append("li").text(function (d) {
+            return d.name + " : " + d.status;
+        });
+
+        d3.selectAll("li")
+                .style("font-family", "arial")
+                .style("font-weight", function (d) {
+                    if (d.status == "GOOD SERVICE") {
+                        return "normal";
+                    }
+                    else {
+                        return "bold";
+                    }
+                })
+    }
+
+    d3.json("./data/service_status.json", draw);
 
 </script>
 </body>
