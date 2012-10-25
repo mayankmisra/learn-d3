@@ -1,0 +1,66 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+        "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <title></title>
+    <script src="../lib/d3.v2.js"></script>
+</head>
+
+<style>
+    .axis { font-size:0.6em; font-family:arial; }
+    .axis path{ fill:none; stroke: black; stroke-width:2px;}
+    circle{ stroke:black; stroke-width:0.5px;  }
+    circle.times_square{ fill: DeepPink; }
+    circle.grand_central{ fill: MediumSeaGreen; }
+    .tick { fill:none; stroke:black; }
+</style>
+<body>
+
+<script type="text/javascript">
+    var widthBase = 700,
+            heightBase = 300,
+            margin = 40,
+            width = widthBase - margin,
+            height = heightBase - margin;
+
+    function draw(data) {
+        var chart = d3.select("body").append("svg")
+                .attr("width", widthBase).attr("height", heightBase)
+                .append("g")
+                .attr("class", "chart");
+        var circle_times_square = chart.selectAll("circle.times_square")
+                .data(data.times_square).enter()
+                .append("circle").attr("class", "times_square");
+        var circle_grand_central = chart.selectAll("circle.grand_central")
+                .data(data.grand_central).enter()
+                .append("circle").attr("class", "grand_central");
+
+        time_extent = d3.extent(data.times_square.concat(data.grand_central), function(d){ return d.time});
+        time_scale = d3.time.scale().domain(time_extent).range([margin, width]);
+
+        count_extent = d3.extent(data.times_square.concat(data.grand_central), function(d){ return d.count});
+        count_scale = d3.scale.linear().domain(count_extent).range([height, margin]);
+        //draw data circle
+        d3.selectAll("circle")
+                .attr("cy", function(d){ return count_scale(d.count)})
+                .attr("cx", function(d){ return time_scale(d.time)})
+                .attr("r", 3);
+        //draw axis
+        var time_axis = d3.svg.axis().scale(time_scale);
+        var count_axis = d3.svg.axis().scale(count_scale).orient("left");
+        d3.select("svg").append("g").attr("class", "x axis").attr("transform", "translate(0," + height + ")").call(time_axis);
+        d3.select("svg").append("g").attr("class", "y axis").attr("transform", "translate(" + margin + ",0)").call(count_axis);
+        //draw title
+        d3.select(".x.axis").append("text").text("time")
+                .attr("x", width/1.6 - margin)
+                .attr("y", margin/1.5);
+        d3.select(".y.axis").append("text").text("mean number of turnstile revolutions")
+                .attr("transform", "rotate(90, -40, 0) translate(20)")
+
+    }
+
+    d3.json("./data/turnstile_traffic.json", draw);
+
+</script>
+</body>
+</html>
