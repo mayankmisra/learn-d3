@@ -1,0 +1,119 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+        "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <title></title>
+    <script src="../lib/d3.v2.js"></script>
+</head>
+
+<style>
+    .axis path, line{ stroke:black; }
+    .line { float: left; }
+    .line_container{ width: 150px; height: 20px; }
+    path{fill:none;stroke-width:2px;stroke:black;}
+    #key{ float: left; }
+    .key_line{ font-size: 17px; width:100%;}
+    .key_square{ height:10px; width: 10px; outline:solid 1px black; float:left; margin: 6px 10px 0px 10px; }
+    #timeseries{ float: left;}
+</style>
+<body>
+<div id="timeseries"></div>
+<div id="key"></div>
+<script type="text/javascript">
+    var time_domain;
+    d3.json("data/subway_wait.json", function(data){
+        time_domain = d3.extent(data, function(d){return d.time})
+    });
+    function draw(data) {
+        var container_dimension = {width:900, height:400},
+                margin = {top:10,right:20,bottom:30,left:60},
+                chart_dimension = {
+                    width:container_dimension.width - margin.left - margin.right,
+                    height:container_dimension.height - margin.top - margin.bottom
+                };
+        var chart = d3.select("#timeseries")
+                .append("svg")
+                .attr("width", container_dimension.width)
+                .attr("height",container_dimension.height)
+                .append("g")
+                .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+                .attr("id", "chart");
+
+
+        var time_scale = d3.time.scale()
+                .range([0,chart_dimension.width])
+                .domain(time_domain);
+        var percent_scale = d3.scale.linear()
+                .range([chart_dimension.height, 0])
+                .domain([65, 90]);
+        var time_axis = d3.svg.axis().scale(time_scale);
+        var percent_axis = d3.svg.axis().scale(percent_scale).orient("left");
+
+        chart.append("g").attr("class", "x axis")
+                .attr("transform", "translate(0," + chart_dimension.height + ")")
+                .call(time_axis);
+        chart.append("g").attr("class", "y axis")
+                .call(percent_axis);
+        d3.select(".y.axis").append("text").text("percent on time")
+                .attr("text-anchor", "middle")
+                .attr("x", container_dimension.height/2)
+                .attr("y", 50)
+                .attr("transform", "rotate(90,0,0)");
+        var key_items = d3.select("#key")
+                .attr("class", "line_container")
+                .selectAll("div").data(data)
+                .enter()
+                .append("div")
+                .attr("class", "key_line")
+                .attr("id", function(d){return d.line_id});
+        key_items.append("div").attr("id", function(d){return "key_square" + d.line_id})
+                .attr("class", "key_square");
+        key_items.append("div").attr("class", "key_label")
+                .text(function(d){return d.line_name});
+
+        function get_timeseries_data() {
+            var id = d3.select(this).attr("id");
+            var ts = d3.select("#" + id + "_path");
+            if(ts.empty()){
+                d3.json("data/subway_wait.json", function(data){
+                    var filtered_data = data.filter(function(d){return d.line_id == id});
+
+                    function draw_time_series(data, id) {
+                        var line = d3.svg.line()
+                                .x(function(d){return time_scale(d.time)})
+                                .y(function(d){return percent_scale(d.late_percent)})
+                                .interpolate("linear");
+                        var g = d3.select("#chart").append("g")
+                                .attr("id", id + "_path")
+                                .attr("class", id.split("_")[1]);
+                        g.append("path").attr("d", line(data))
+
+                        g.selectAll("circle").data(data).enter()
+                                .append("circle")
+                                .attr("cx", function(d){return time_scale(d.time)})
+                                .attr("cy", function(d){return percent_scale(d.late_percent)})
+                                .attr("r", 5);
+                        g.selectAll("circle")
+                                .on("mouseover", function(d){
+                                    d3.select(this).transition().attr("r", 9);
+                                })
+                                .on("mouseout", function(d){
+                                    d3.select(this).transition().attr("r", 5);
+                                })
+                    }
+
+                    draw_time_series(filtered_data, id);
+                });
+            }else{
+                ts.remove();
+            }
+        }
+
+        d3.selectAll(".key_line").on("click", get_timeseries_data);
+    }
+
+    d3.json("./data/subway_wait_mean.json", draw);
+
+</script>
+</body>
+</html>
