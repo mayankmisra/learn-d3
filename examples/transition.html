@@ -120,8 +120,10 @@
                                 .on("mouseover", function(d){
                                     d3.select(this).transition().attr("r", 9);
                                 })
-                                .on("mouseout", function(d){
-                                    d3.select(this).transition().attr("r", 5);
+                                .on("mouseout", function(d, i){
+                                    if (i !== data.length-1) {
+                                        d3.select(this).transition().attr("r", 5);
+                                    }
                                 })
                         //add label
                         g.selectAll("circle")
