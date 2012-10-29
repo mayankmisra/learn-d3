@@ -92,6 +92,8 @@
                                 .append("circle")
                                 .attr("cx", function(d){return time_scale(d.time)})
                                 .attr("cy", function(d){return percent_scale(d.late_percent)})
+                                .transition()
+                                .delay(function(d,i){return i/ data.length * 1000})
                                 .attr("r", 5);
                         g.selectAll("circle")
                                 .on("mouseover", function(d){
