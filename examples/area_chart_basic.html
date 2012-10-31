@@ -1,0 +1,59 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+        "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <title></title>
+    <script src="../lib/d3.v2.js"></script>
+</head>
+
+<style>
+    .axis path,
+    .axis line { fill: none; stroke: #000; shape-rendering: crispEdges; }
+
+    .area { fill: steelblue; }
+</style>
+<body>
+
+<script type="text/javascript">
+    var canvasSize = {width:960, height:500};
+    var margin = {top:20, right:20, bottom:30, left:50};
+    var areaSize = {
+        width:canvasSize.width-margin.left-margin.right,
+        height:canvasSize.height - margin.top - margin.bottom};
+
+    var parseDate = d3.time.format("%d-%b-%y").parse;
+
+    function draw(data) {
+        data.forEach(function(d){
+            d.date = parseDate(d.date);
+            d.close = +d.close;
+        });
+
+        var xScale = d3.time.scale().range([0, areaSize.width]).domain(d3.extent(data, function(d){return d.date}));
+        var xAxis = d3.svg.axis().scale(xScale).orient("bottom");
+
+        var yScale = d3.scale.linear().range([areaSize.height, 0]).domain([0, d3.max(data, function(d){return d.close})]);
+        var yAxis = d3.svg.axis().scale(yScale).orient("left");
+
+        var area = d3.svg.area().x(function(d){return xScale(d.date)}).y0(areaSize.height).y1(function(d){return yScale(d.close)});
+
+        var svg = d3.select("body").append("svg").attr("width", canvasSize.width).attr("height", canvasSize.height)
+                .append("g").attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+        svg.append("path").datum(data).attr("class", "area").attr("d", area);
+
+        svg.append("g").attr("class", "x axis").attr("transform", "translate(0," + areaSize.height + ")").call(xAxis);
+        svg.append("g").attr("class", "y axis").call(yAxis)
+                .append("text").text("Price ($)")
+                .attr("transform", "rotate(-90)")
+                .attr("y", 6)
+                .style("text-anchor", "end")
+                .attr("dy",".71em");
+
+
+    }
+    d3.tsv("./data/data.tsv", draw);
+
+</script>
+</body>
+</html>
