@@ -1,0 +1,85 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+        "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <title></title>
+    <script src="../lib/d3.v2.js"></script>
+</head>
+
+<style>
+
+    body { font: 10px sans-serif; }
+
+    .axis path,
+    .axis line { fill: none; stroke: #000; shape-rendering: crispEdges; }
+
+    .area { fill: steelblue; }
+
+    .line {
+        fill: none;
+        stroke-width: 1.5px;
+    }
+</style>
+<body>
+
+<script type="text/javascript">
+    var canvasSize = {width:960, height:500};
+    var margin = {top:20, right:80, bottom:30, left:50};
+    var areaSize = {
+        width:canvasSize.width-margin.left-margin.right,
+        height:canvasSize.height - margin.top - margin.bottom};
+
+    var parseDate = d3.time.format("%Y%m%d").parse;
+    var color = d3.scale.category10();
+    function draw(data) {
+        data.forEach(function(d){
+            d.date = parseDate(d.date);
+        });
+        color.domain(d3.keys(data[0]).filter(function(key){return key != "date"}));
+        var cities = color.domain().map(function(name){
+            return {name:name, values:data.map(function(d){
+                return {date:d.date, temperature:+d[name]};
+            })}
+        });
+
+        var xScale = d3.time.scale().range([0, areaSize.width]).domain(d3.extent(data, function(d){return d.date}));
+        var xAxis = d3.svg.axis().scale(xScale).orient("bottom");
+        var minY = d3.min(cities, function(city){
+            return d3.min(city.values, function(v){ return v.temperature})
+        });
+        var maxY = d3.max(cities, function(city){
+            return d3.max(city.values, function(v){ return v.temperature})
+        })
+        var yScale = d3.scale.linear().range([areaSize.height, 0]).domain([minY, maxY]);
+        var yAxis = d3.svg.axis().scale(yScale).orient("left");
+
+        var svg = d3.select("body").append("svg").attr("width", canvasSize.width).attr("height", canvasSize.height)
+                .append("g").attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+        svg.append("g").attr("class", "x axis").attr("transform", "translate(0," + areaSize.height + ")").call(xAxis);
+        svg.append("g").attr("class", "y axis").call(yAxis)
+                .append("text").text("Temperature (ºF)").attr("transform", "rotate(-90)").style("text-anchor", "end")
+                .attr("y", 10).attr("dy", ".71em");
+
+        var line = d3.svg.line().interpolate("basis").x(function(d){return xScale(d.date)}).y(function(d){return yScale(d.temperature)});
+        var city = svg.selectAll(".city").data(cities).enter().append("g").attr("class", "city");
+        city.append("path").attr("class", 'line')
+                .attr("d", function(d){return line(d.values)})
+                .attr("stroke", function(d){return color(d.name)});
+        city.append("text")
+                .datum(function(d){
+                    return {name:d.name, value:d.values[d.values.length-1]}
+                })
+                .text(function(d){return d.name})
+                .attr("transform", function(d){return "translate(" + xScale(d.value.date) + ", " + yScale(d.value.temperature) + ")"})
+                .attr("x", 3)
+                .attr("dy", ".35em")
+
+
+
+    }
+    d3.tsv("./data/temperatures.tsv", draw);
+
+</script>
+</body>
+</html>
